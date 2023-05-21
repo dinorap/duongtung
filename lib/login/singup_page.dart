@@ -9,14 +9,14 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../ui/home_page.dart';
 import 'login_page.dart';
 
-class SignUpPage extends StatefulWidget {
-  const SignUpPage({Key? key}) : super(key: key);
+class SignUpPage1 extends StatefulWidget {
+  const SignUpPage1({Key? key}) : super(key: key);
 
   @override
   _SignUpPageState createState() => _SignUpPageState();
 }
 
-class _SignUpPageState extends State<SignUpPage> {
+class _SignUpPageState extends State<SignUpPage1> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController compasswordController = TextEditingController();

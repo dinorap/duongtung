@@ -185,7 +185,7 @@ class _LoginPageState extends State<LoginPage> {
                       TextSpan(
                         text: " TẠO TÀI KHOẢN",
                         style: TextStyle(color: Colors.white, fontSize: 22,fontWeight: FontWeight.bold),
-                        recognizer: TapGestureRecognizer()..onTap=()=>Get.to(()=>SignUpPage()),
+                        recognizer: TapGestureRecognizer()..onTap=()=>Get.to(()=>SignUpPage1()),
                       )
                     ]))
           ],

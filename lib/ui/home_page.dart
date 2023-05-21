@@ -568,176 +568,307 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 import '../login/auth_controller.dart';
+import '../login/chatgpt_api.dart';
+import '../login/model.dart';
 import 'ChangePasswordPage.dart';
 import 'ProfilePage.dart';
 
 
-class HomePage extends StatefulWidget {
-  String email;
-  HomePage({Key? key, required this.email}) : super(key: key);
+
+class ChatPage extends StatefulWidget {
+  const ChatPage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<ChatPage> createState() => _ChatPageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  final TextEditingController _cityController = TextEditingController();
-  final Constants _constants = Constants();
+class _ChatPageState extends State<ChatPage> {
+  final _textController = TextEditingController();
+  final _scrollController = ScrollController();
+  final List<ChatMessage> _messages = [];
+  late bool isLoading;
+  final ChatGPTApi chatGPTApi = ChatGPTApi(
+      apiKey: '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'); // Tạo
 
-
-  static String API_KEY =
-      'ba50bab67a7645189d773819231405'; //Paste Your API Here
-  String? bgIm;
-  String location = 'Ha Noioo'; //Default location
-  String weatherIcon = 'sunny';
-  int temperature = 0;
-  int windSpeed = 0;
-  int humidity = 0;
-  int cloud = 0;
-  String currentDate = '';
-
-  List hourlyWeatherForecast = [];
-  List dailyWeatherForecast = [];
-
-  String currentWeatherStatus = '';
-
-  //API Call
-  String searchWeatherAPI = "https://api.weatherapi.com/v1/forecast.json?key=" +
-      API_KEY +
-      "&days=7&q=";
-
-
-
-  //function to return the first two names of the string location
-
-
-
+  @override
+  void initState() {
+    super.initState();
+    isLoading = false;
+  }
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-        overlays: SystemUiOverlay.values);
-    Size size = MediaQuery.of(context).size;
-
     return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: Colors.red,
-      body: Container(
-        width: size.width,
-        height: size.height,
-        padding: const EdgeInsets.only(top: 0, left: 0),
-        decoration: BoxDecoration(
-
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-
-
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-              height: size.height * .72,
-              decoration: BoxDecoration(
-                color: Color(0x5999999), // Màu đen với độ trong suốt 50%
-
-                borderRadius: BorderRadius.circular(20),
+      appBar: AppBar(
+        toolbarHeight: 100,
+        titleSpacing: 0,
+        title: Padding(
+          padding: EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                backgroundColor: const Color(0xff10a37f),
+                radius: 25,
+                child: Image.asset(
+                  'assets/bot.png',
+                  color: Colors.white,
+                  scale: 1.5,
+                ),
               ),
-              child: Column(
-                //crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      PopupMenuButton<String>(
-                        onSelected: (String value) {
-                          if (value == 'logout') {
-                            showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                    title: Text("Confirm logout"),
-                                    content: Text(
-                                        "Are you sure you want to log out?"),
-                                    actions: <Widget>[
-                                      TextButton(
-                                        child: Text("Cancel"),
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                      ),
-                                      TextButton(
-                                        child: Text("Log out"),
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                          AuthController.instance.logout();
-                                        },
-                                      ),
-                                    ],
-                                  );
-                                });
-                          } else if (value == 'info') {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      ProfilePage(email: widget.email)),
-                            );
-                          } else if (value == 'change_password') {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => ChangePasswordPage()),
-                            );
-                          }
-                        }
-                        ,
-                        itemBuilder: (BuildContext context) {
-                          return [
-                            PopupMenuItem<String>(
-                              value: 'info',
-                              child: Text('Profile'),
-                            ),
-                            PopupMenuItem<String>(
-                              value: 'change_password',
-                              child: Text('Change Password'),
-                            ),
-                            PopupMenuItem<String>(
-                              value: 'logout',
-                              child: Text('Log out'),
-                            ),
-                          ];
-                        },
-                        child: Image.asset(
-                          "assets/menu.png",  // nut logout
-                          width: 40,
-                          height: 40,
-                        ),
-                      ),
+              const SizedBox(width: 8),
+              const Text(
+                "CHAT GPT",
+                maxLines: 2,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: const Color(0xff10a37f),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              AuthController.instance.logout();
+            },
+            icon: Icon(Icons.logout),
+          ),
+        ],
+      ),
+      body: _buildBody(context),
+    );
+  }
 
-                      // ClipRRect(
-                      //   borderRadius: BorderRadius.circular(10),
-                      //   child: Image.asset(
-                      //     "assets/profile.png",
-                      //     width: 40,
-                      //     height: 40,
-                      //   ),
-                      // ),
-                    ],
-                  ),
 
-                ],
+  Widget _buildBody(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        children: [
+          Expanded(
+            child: _buildList(),
+          ),
+          Visibility(
+            visible: isLoading,
+            child: const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(
+                color: Color(0xff10a37f),
               ),
             ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                _buildInput(),
+                const SizedBox(width: 5),
+                _buildSubmit(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          ],
+  Widget _buildSubmit() {
+    return Visibility(
+      visible: !isLoading,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xff102153),
+          borderRadius: BorderRadius.circular(
+            6,
+          ),
+        ),
+        child: IconButton(
+          icon: const Icon(
+            Icons.send_rounded,
+            color: Colors.white,
+          ),
+          onPressed: () async {
+            setState(
+                  () {
+                _messages.add(
+                  ChatMessage(
+                    text: _textController.text,
+                    chatMessageType: ChatMessageType.user,
+                  ),
+                );
+                isLoading = true;
+              },
+            );
+            final input = _textController.text;
+            _textController.clear();
+            Future.delayed(const Duration(milliseconds: 50))
+                .then((_) => _scrollDown());
+            chatGPTApi.complete(input).then((value) {
+              setState(() {
+                isLoading = false;
+                _messages.add(
+                  ChatMessage(
+                    text: value,
+                    chatMessageType: ChatMessageType.bot,
+                  ),
+                );
+              });
+            }).catchError((error) {
+              setState(
+                    () {
+                  final snackBar = SnackBar(
+                    content: Text(error.toString()),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                  isLoading = false;
+                },
+              );
+            });
+          },
         ),
       ),
     );
   }
+
+  Expanded _buildInput() {
+    return Expanded(
+      child: TextField(
+        textCapitalization: TextCapitalization.sentences,
+        minLines: 1,
+        maxLines: 9,
+        controller: _textController,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.grey[300],
+          focusedBorder: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildList() {
+    if (_messages.isEmpty) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            backgroundColor: const Color(0xff10a37f),
+            radius: 50,
+            child: Image.asset(
+              'assets/bot.png',
+              color: Colors.white,
+              scale: 0.6,
+            ),
+          ),
+          const SizedBox(
+            height: 10,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 50),
+            child: Text(
+              'Hhuiuuuuuuuuuu',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Colors.black,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      physics: const BouncingScrollPhysics(),
+      controller: _scrollController,
+      itemCount: _messages.length,
+      itemBuilder: (context, index) {
+        var message = _messages[index];
+        return ChatMessageWidget(
+          text: message.text,
+          chatMessageType: message.chatMessageType,
+        );
+      },
+    );
+  }
+
+  void _scrollDown() {
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
 }
 
+class ChatMessageWidget extends StatelessWidget {
+  const ChatMessageWidget(
+      {super.key, required this.text, required this.chatMessageType});
+
+  final String text;
+  final ChatMessageType chatMessageType;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10.0),
+      padding: const EdgeInsets.all(16),
+      color: chatMessageType == ChatMessageType.bot
+          ? const Color(0xff10a37f)
+          : Colors.white,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          chatMessageType == ChatMessageType.bot
+              ? Container(
+            margin: const EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              backgroundColor: const Color(0xff10a37f),
+              child: Image.asset(
+                'assets/bot.png',
+                color: Colors.white,
+                scale: 1.5,
+              ),
+            ),
+          )
+              : Container(
+            margin: const EdgeInsets.only(right: 16.0),
+            child: const CircleAvatar(
+              child: Icon(
+                Icons.person,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Container(
+                  padding: const EdgeInsets.all(8.0),
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                  ),
+                  child: Text(
+                    text,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: chatMessageType == ChatMessageType.bot
+                          ? Colors.white
+                          : Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 
 
