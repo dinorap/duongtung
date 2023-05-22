@@ -33,7 +33,7 @@ class _ChatPageState extends State<ChatPage> {
   final List<ChatMessage> _messages = [];
   late bool isLoading;
   final ChatGPTApi chatGPTApi = ChatGPTApi(
-      apiKey: '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'); // Tạo
+      apiKey: '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'); // Tạo
 
   @override
   void initState() {
